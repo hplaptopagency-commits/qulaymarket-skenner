@@ -738,7 +738,8 @@
             calculateAdminTotals();
         }
 
- function adminSubmitCheckout() {
+ 
+function adminSubmitCheckout() {
     if (adminCart.length === 0) return;
 
     let messageText = "🔔 💼 **ADMIN UCHUN BILDIRISHNOMA**\n\n🛍️ **Yangi sotuv amalga oshirildi!**\n\n";
@@ -756,9 +757,8 @@
     localStorage.setItem('monolith_central_db', JSON.stringify(db));
 
     // 🚀 TELEGRAM BOT ORQALI TO'G'RIDAN-TO'G'RI ADMINGA XABAR YUBORISH
-    // ⚠️ TOKEn VA ID'ni FAQAT SHU YERDA TO'G'RI KIRITING:
-    const botToken = "8840819267:AAFeXN1j3Crp86HUOT1zzoTgjtWSW5Kl3wA";
-    const adminId = "6744459523";
+    const botToken = "YANGI_BOT_TOKENINGIZNI_SHU_YERGA_YOZING";
+    const adminId = "OZINGIZNING_ID_RAQAMINGIZNI_SHU_YERGA_YOZING";
 
     const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
 
