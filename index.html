@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Qulay Market - Ekotizim</title>
+    <!-- Telegram WebApp Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- HTML5-QRCode library -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 99px;
+        }
+        #reader video {
+            object-fit: cover !important;
+            width: 100% !important;
+            height: 100% !important;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-blue-500 selection:text-white pb-16">
+
+    <!-- NOTIFICATION SYSTEM -->
+    <div id="toast" class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 transform translate-y-[-100px] opacity-0 bg-slate-900/90 backdrop-blur-md border border-blue-500/30 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 text-sm font-medium transition-all duration-300">
+        <i class="fas fa-info-circle text-blue-400" id="toast-icon"></i>
+        <span id="toast-text">Xabar</span>
+    </div>
+
+    <!-- ========================================== -->
+    <!--          1. MIJOZLAR ONLAYN MARKETI         -->
+    <!-- ========================================== -->
+    <div id="view-customer" class="block max-w-md mx-auto px-4 pt-4">
+        <!-- Customer Header -->
+        <header class="flex justify-between items-center mb-6">
+            <div>
+                <p class="text-xs text-slate-400 font-medium tracking-wide">Xush kelibsiz!</p>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">Qulay Market</h1>
+            </div>
+            <button onclick="openCartModal()" class="relative p-3 bg-slate-900 border border-slate-800 rounded-2xl hover:bg-slate-800 transition">
+                <i class="fa-solid fa-basket-shopping text-slate-200 text-lg"></i>
+                <span id="customer-cart-count" class="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center border border-slate-900">0</span>
+            </button>
+        </header>
+
+        <!-- Search & Filter -->
+        <div class="relative mb-6">
+            <i class="fa-solid fa-magnifying-glass absolute left-4 top-3.5 text-slate-500 text-sm"></i>
+            <input type="text" id="customer-search" oninput="renderCustomerProducts()" placeholder="Mahsulotlarni qidirish..." class="w-full bg-slate-900/60 border border-slate-800/80 rounded-2xl pl-11 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500 transition-all">
+        </div>
+
+        <!-- Categories Slider -->
+        <div class="flex gap-2 overflow-x-auto pb-4 mb-4 custom-scrollbar whitespace-nowrap">
+            <button onclick="filterCustomerCategory('Hammasi')" class="customer-cat-btn px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/10">Hammasi</button>
+            <button onclick="filterCustomerCategory('Ichimliklar')" class="customer-cat-btn px-4 py-2 bg-slate-900 text-slate-400 text-xs font-medium rounded-xl border border-slate-800/80 hover:bg-slate-800 transition">Ichimliklar</button>
+            <button onclick="filterCustomerCategory('Shirinliklar')" class="customer-cat-btn px-4 py-2 bg-slate-900 text-slate-400 text-xs font-medium rounded-xl border border-slate-800/80 hover:bg-slate-800 transition">Shirinliklar</button>
+            <button onclick="filterCustomerCategory('Sut mahsulotlari')" class="customer-cat-btn px-4 py-2 bg-slate-900 text-slate-400 text-xs font-medium rounded-xl border border-slate-800/80 hover:bg-slate-800 transition">Sut mahsulotlari</button>
+            <button onclick="filterCustomerCategory('Boshqa')" class="customer-cat-btn px-4 py-2 bg-slate-900 text-slate-400 text-xs font-medium rounded-xl border border-slate-800/80 hover:bg-slate-800 transition">Boshqa</button>
+        </div>
+
+        <!-- Products Grid Showcase -->
+        <h2 class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-3">Mahsulotlar vitrinasi</h2>
+        <div id="customer-products-grid" class="grid grid-cols-2 gap-3 mb-10">
+            <!-- Dynamic inject -->
+        </div>
+
+        <!-- Hidden Entry Gate to Admin (Just for the owner) -->
+        <div class="text-center py-6 border-t border-slate-900">
+            <button onclick="openLoginModal()" class="text-xs text-slate-600 hover:text-blue-500 transition-all font-medium"><i class="fa-solid fa-lock-open mr-1"></i> Xodimlar / Admin tizimiga kirish</button>
+        </div>
+    </div>
+
+    <!-- CUSTOMER CART MODAL -->
+    <div id="modal-cart" class="fixed inset-0 bg-black/70 backdrop-blur-md z-50 hidden flex items-end justify-center">
+        <div class="bg-slate-900 w-full max-w-md rounded-t-[32px] p-5 border-t border-slate-800 max-h-[85vh] flex flex-col justify-between">
+            <div>
+                <div class="flex justify-between items-center mb-5">
+                    <h3 class="text-lg font-bold text-slate-200 flex items-center gap-2"><i class="fa-solid fa-cart-shopping text-blue-500"></i> Savatchangiz</h3>
+                    <button onclick="closeCartModal()" class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                
+                <div id="customer-cart-empty" class="text-center py-12 text-slate-500 text-sm hidden">Savatchangiz hozircha bo'sh.</div>
+                
+                <div id="customer-cart-list" class="space-y-3 overflow-y-auto max-h-[40vh] pr-1 custom-scrollbar">
+                    <!-- Dynamic -->
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-slate-800/60 space-y-4">
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-slate-400 font-medium">Umumiy miqdor:</span>
+                    <span id="customer-cart-total" class="text-xl font-bold text-emerald-400">0 so'm</span>
+                </div>
+                <button onclick="checkoutCustomerOrder()" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3.5 rounded-2xl transition shadow-lg shadow-blue-600/20 text-sm active:scale-[0.99]"><i class="fa-solid fa-check-double mr-1.5"></i> Buyurtmani Rasmiylashtirish</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--         2. AUTH LOGIN MODAL OVERLAY        -->
+    <!-- ========================================== -->
+    <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-lg z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 w-full max-w-xs rounded-3xl p-6 shadow-2xl relative">
+            <button onclick="closeLoginModal()" class="absolute top-4 right-4 text-slate-500 hover:text-slate-300 transition"><i class="fa-solid fa-xmark"></i></button>
+            <div class="text-center mb-6">
+                <div class="w-12 h-12 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-lg"><i class="fa-solid fa-shield-halved"></i></div>
+                <h3 class="text-base font-bold text-slate-200">Xavfsiz Kirish</h3>
+                <p class="text-xs text-slate-500 mt-0.5">Admin panelga kirish parolini yozing</p>
+            </div>
+            <div class="space-y-3.5 mb-5">
+                <input type="text" id="login-user" value="admin" placeholder="Login" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                <input type="password" id="login-pass" placeholder="Parol (Kodi)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+            </div>
+            <button onclick="attemptLogin()" class="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 rounded-xl transition">Kirishni Tasdiqlash</button>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--         3. PROTECTED ADMIN PANEL VIEW      -->
+    <!-- ========================================== -->
+    <div id="view-admin" class="hidden max-w-md mx-auto px-4 pt-4">
+        <!-- Admin Dashboard Header -->
+        <header class="flex justify-between items-center mb-5 bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center text-sm"><i class="fa-solid fa-user-gear"></i></div>
+                <div>
+                    <h2 class="text-sm font-bold text-slate-200">Boshqaruv Paneli</h2>
+                    <p class="text-[10px] text-emerald-400 font-medium flex items-center gap-1">🟢 Avtorizatsiya muvaffaqiyatli</p>
+                </div>
+            </div>
+            <button onclick="logoutAdmin()" class="px-3 py-1.5 bg-slate-800 text-red-400 hover:bg-red-950/30 rounded-xl text-xs font-semibold transition border border-slate-700/60"><i class="fa-solid fa-arrow-right-from-bracket mr-1"></i> Chiqish</button>
+        </header>
+
+        <!-- LIVE SCANNER INTERFACE -->
+        <section class="bg-slate-900 p-4 rounded-3xl mb-5 border border-slate-800 shadow-xl">
+            <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <span class="flex h-1.5 w-1.5 relative">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                </span>
+                HQ Shtrix-Kod Kamera Skaneri
+            </h3>
+            <!-- Square Camera Window Controller Box -->
+            <div class="w-full max-w-xs mx-auto overflow-hidden rounded-2xl bg-black border border-slate-800 aspect-square max-h-[250px] relative shadow-inner">
+                <div id="reader" style="width: 100%; height: 100%;"></div>
+            </div>
+            <div class="flex gap-2 mt-3.5">
+                <button onclick="startAdminScanner()" class="w-full bg-slate-800 hover:bg-slate-700 py-2.5 rounded-xl font-semibold text-xs border border-slate-700 transition flex items-center justify-center gap-2 text-slate-200"><i class="fa-solid fa-camera text-blue-400"></i> Kamerani Yoqish</button>
+                <button onclick="stopAdminScanner()" class="w-full bg-red-950/20 text-red-400 hover:bg-red-950/40 py-2.5 rounded-xl font-semibold text-xs border border-red-900/30 transition flex items-center justify-center gap-1"><i class="fa-solid fa-video-slash"></i> O'chirish</button>
+            </div>
+        </section>
+
+        <!-- SUB NAV TABS FOR ADMIN -->
+        <nav class="flex bg-slate-950 p-1.5 rounded-2xl gap-1 mb-5 border border-slate-900">
+            <button id="admin-ombor-btn" onclick="switchAdminTab('ombor')" class="w-full py-2.5 text-center text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 transition duration-200">📥 Omborga Yuklash</button>
+            <button id="admin-kassa-btn" onclick="switchAdminTab('kassa')" class="w-full py-2.5 text-center text-xs font-bold rounded-xl text-slate-400 transition duration-200">🧾 Kassa (Sotish)</button>
+        </nav>
+
+        <!-- ADMIN TAB 1: OMBOR INVENTORY MODULE -->
+        <div id="admin-tab-ombor" class="space-y-4">
+            <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800 space-y-3.5 shadow-xl">
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Shtrix-Kod *</label>
+                    <input type="text" id="k-barcode" placeholder="Skan qiling yoki o'zingiz yozing" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Mahsulot Nomi *</label>
+                    <input type="text" id="k-name" placeholder="Masalan: Pepsi 1.5L" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Kategoriya</label>
+                        <select id="k-category" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                            <option value="Ichimliklar">Ichimliklar</option>
+                            <option value="Shirinliklar">Shirinliklar</option>
+                            <option value="Sut mahsulotlari">Sut mahsulotlari</option>
+                            <option value="Boshqa">Boshqa</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Ombor Qoldig'i (Miqdor)</label>
+                        <input type="number" id="k-qty" value="10" min="1" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Kirim Narxi (So'm)</label>
+                        <input type="number" id="k-cost" placeholder="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Sotish Narxi (So'm)</label>
+                        <input type="number" id="k-price" placeholder="0" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-400 mb-1 uppercase tracking-wider">Rasm Linki (Tavsif uchun URL)</label>
+                    <input type="text" id="k-image" placeholder="https://images.uz/pepsi.jpg" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <button onclick="adminSubmitKirim()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-blue-600/20 mt-2 text-xs uppercase tracking-wider"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Markaziy Omborni Yangilash</button>
+            </div>
+        </div>
+
+        <!-- ADMIN TAB 2: KASSA CASHIER CHECKOUT MODULE -->
+        <div id="admin-tab-kassa" class="hidden space-y-4">
+            <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800 shadow-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sotuv Savatchasi</h4>
+                    <button onclick="clearAdminCart()" class="text-xs text-red-400 hover:underline"><i class="fa-solid fa-trash-can mr-1"></i> Tozalash</button>
+                </div>
+                
+                <div id="admin-cart-empty" class="text-center py-8 text-slate-500 text-xs">Savat bo'sh. Shtrix-kod o'qiting yoki qo'lda qo'shing.</div>
+                
+                <div id="admin-cart-list" class="space-y-2 max-h-56 overflow-y-auto hidden pr-1 custom-scrollbar">
+                    <!-- Dynamic Rows -->
+                </div>
+                
+                <div class="mt-4 pt-4 border-t border-slate-800/80 grid grid-cols-3 gap-2">
+                    <input type="text" id="m-barcode" placeholder="Kod" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white">
+                    <input type="text" id="m-name" placeholder="Nom" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white">
+                    <input type="number" id="m-price" placeholder="Narx" class="bg-slate-950 border border-slate-800 rounded-xl px-2 py-2 text-xs text-white">
+                    <button onclick="addManualToAdminCart()" class="col-span-3 bg-slate-800 text-slate-300 py-2 rounded-xl text-xs font-semibold border border-slate-700 hover:bg-slate-700 transition">Qo'lda Savatga Kiritish</button>
+                </div>
+            </div>
+
+            <!-- Total Check Panel -->
+            <div class="bg-slate-900 p-4 rounded-3xl border border-slate-800 space-y-3 shadow-xl">
+                <div class="flex justify-between text-xs text-slate-400">
+                    <span>Jami donalar:</span>
+                    <span id="admin-total-qty" class="font-bold text-slate-200">0 ta</span>
+                </div>
+                <div class="flex justify-between items-center border-t border-slate-800 pt-2">
+                    <span class="text-xs text-slate-400">Umumiy Savdo Summasi:</span>
+                    <span id="admin-total-price" class="font-bold text-xl text-emerald-400">0 so'm</span>
+                </div>
+                <button onclick="adminSubmitCheckout()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-xl transition shadow-lg shadow-emerald-600/20 text-xs uppercase tracking-wider"><i class="fa-solid fa-receipt mr-1.5"></i> Xaridni Yakunlash & Sotish</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!--            4. GLOBAL FOOTER NAV            -->
+    <!-- ========================================== -->
+    <footer class="fixed bottom-0 left-0 right-0 bg-slate-900/80 backdrop-blur-lg px-6 py-2.5 border-t border-slate-800/60 flex justify-between items-center z-40 max-w-md mx-auto">
+        <button onclick="showView('customer')" id="nav-btn-customer" class="flex flex-col items-center gap-1 text-blue-500 font-bold">
+            <i class="fa-solid fa-shop text-base"></i>
+            <span class="text-[10px]">Onlayn Do'kon</span>
+        </button>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <div class="text-center text-[10px] text-slate-500">
+            <span class="font-medium">Zanjirlangan Tizim v3.0</span>
+        </div>
+        <div class="h-4 w-[1px] bg-slate-800"></div>
+        <button onclick="showView('admin')" id="nav-btn-admin" class="flex flex-col items-center gap-1 text-slate-500 font-medium hover:text-slate-300">
+            <i class="fa-solid fa-user-lock text-base"></i>
+            <span class="text-[10px]">Admin Panel</span>
+        </button>
+    </footer>
+
+
+    <!-- ========================================== -->
+    <!--            5. CORE JAVASCRIPT LOGIC         -->
+    <!-- ========================================== -->
+    <script>
+        // Default Mock Data inside Database if empty
+        const initialDB = [
+            { barcode: "4780001010113", name: "Coca-Cola 1.5L", category: "Ichimliklar", quantity: 45, cost_price: 8000, price: 12000, image: "https://images.unsplash.com/photo-1622483767028-3f66f32aef97?w=400&auto=format&fit=crop&q=60" },
+            { barcode: "4780023451294", name: "Snickers Bar 50g", category: "Shirinliklar", quantity: 120, cost_price: 5000, price: 8500, image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400&auto=format&fit=crop&q=60" },
+            { barcode: "4780011223344", name: "Sut 1% Bio", category: "Sut mahsulotlari", quantity: 22, cost_price: 9000, price: 13000, image: "https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&auto=format&fit=crop&q=60" }
+        ];
+
+        // Init Core Storage Databases
+        let db = JSON.parse(localStorage.getItem('monolith_central_db'));
+        if (!db || db.length === 0) {
+            db = initialDB;
+            localStorage.setItem('monolith_central_db', JSON.stringify(db));
+        }
+
+        let customerCart = JSON.parse(localStorage.getItem('customer_active_cart')) || [];
+        let adminCart = [];
+        let html5QrcodeScanner = null;
+        let selectedCustomerCategory = 'Hammasi';
+        let isAdminAuthenticated = false;
+        let activeAdminTab = 'ombor';
+
+        // Initialize Telegram View Sync if applicable
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        }
+
+        // Global Dynamic Toast Engine
+        function showNotification(text, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastText = document.getElementById('toast-text');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            toastText.innerText = text;
+            if (type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400";
+                toast.className = toast.className.replace(/border-[a-z0-9\/-]+/g, 'border-emerald-500/40');
+            } else {
+                toastIcon.className = "fa-solid fa-circle-info text-blue-400";
+                toast.className = toast.className.replace(/border-[a-z0-9\/-]+/g, 'border-blue-500/40');
+            }
+            
+            toast.style.transform = "translateY(0px) translateX(-50%)";
+            toast.style.opacity = "1";
+            setTimeout(() => {
+                toast.style.transform = "translateY(-100px) translateX(-50%)";
+                toast.style.opacity = "0";
+            }, 3000);
+        }
+
+        // View Controller
+        function showView(viewName) {
+            if (viewName === 'admin' && !isAdminAuthenticated) {
+                openLoginModal();
+                return;
+            }
+            
+            const custView = document.getElementById('view-customer');
+            const admView = document.getElementById('view-admin');
+            const navCust = document.getElementById('nav-btn-customer');
+            const navAdm = document.getElementById('nav-btn-admin');
+
+            if (viewName === 'customer') {
+                custView.style.display = 'block';
+                admView.style.display = 'none';
+                navCust.className = "flex flex-col items-center gap-1 text-blue-500 font-bold";
+                navAdm.className = "flex flex-col items-center gap-1 text-slate-500 font-medium hover:text-slate-300";
+                stopAdminScanner();
+                renderCustomerProducts();
+            } else {
+                custView.style.display = 'none';
+                admView.style.display = 'block';
+                navCust.className = "flex flex-col items-center gap-1 text-slate-500 font-medium hover:text-slate-300";
+                navAdm.className = "flex flex-col items-center gap-1 text-blue-500 font-bold";
+                renderAdminCart();
+            }
+        }
+
+        // ========================================== 
+        //           CUSTOMER SYSTEM ACTIONS          
+        // ==========================================
+        function renderCustomerProducts() {
+            const grid = document.getElementById('customer-products-grid');
+            const query = document.getElementById('customer-search').value.toLowerCase();
+            grid.innerHTML = "";
+
+            const filtered = db.filter(item => {
+                const matchesCat = (selectedCustomerCategory === 'Hammasi' || item.category === selectedCustomerCategory);
+                const matchesSearch = item.name.toLowerCase().includes(query) || item.barcode.includes(query);
+                return matchesCat && matchesSearch;
+            });
+
+            if(filtered.length === 0) {
+                grid.innerHTML = `<div class="col-span-2 text-center py-8 text-slate-500 text-xs">Mahsulot topilmadi</div>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                const isOut = item.quantity <= 0;
+                const card = document.createElement('div');
+                card.className = "bg-slate-900 border border-slate-800/80 rounded-2xl overflow-hidden flex flex-col justify-between p-2.5 transition hover:border-slate-700";
+                
+                const fallbackImg = "https://images.unsplash.com/photo-1542838132-92c53300491e?w=400&auto=format&fit=crop&q=60";
+                const imgUrl = item.image && item.image.startsWith('http') ? item.image : fallbackImg;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="w-full aspect-[4/3] rounded-xl overflow-hidden bg-slate-950 relative mb-2">
+                            <img src="${imgUrl}" alt="${item.name}" class="w-full height-full object-cover ${isOut ? 'opacity-40 grayscale' : ''}">
+                            ${isOut ? '<span class="absolute text-[9px] font-bold uppercase tracking-wide bg-red-600 text-white px-2 py-0.5 rounded-md top-2 left-2 shadow-md">Tugadi</span>' : ''}
+                            <span class="absolute text-[10px] font-medium bg-slate-950/80 backdrop-blur-md text-slate-400 px-2 py-0.5 rounded-md bottom-2 right-2">${item.category}</span>
+                        </div>
+                        <h4 class="text-xs font-bold text-slate-200 line-clamp-1 px-1">${item.name}</h4>
+                        <p class="text-[10px] text-slate-500 px-1 mb-2">Omborda: ${item.quantity} dona</p>
+                    </div>
+                    <div class="flex justify-between items-center mt-2 pt-1 border-t border-slate-800/40 px-1">
+                        <span class="text-xs font-extrabold text-emerald-400">${item.price.toLocaleString('uz-UZ')} s.</span>
+                        <button onclick="addTokenToCustomerCart('${item.barcode}')" ${isOut ? 'disabled' : ''} class="w-8 h-8 rounded-xl ${isOut ? 'bg-slate-800 text-slate-600' : 'bg-blue-600 text-white hover:bg-blue-700'} transition flex items-center justify-center text-xs"><i class="fa-solid fa-plus"></i></button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            updateCustomerCartBadge();
+        }
+
+        function filterCustomerCategory(catName) {
+            selectedCustomerCategory = catName;
+            const buttons = document.querySelectorAll('.customer-cat-btn');
+            buttons.forEach(btn => {
+                if(btn.innerText === catName) {
+                    btn.className = "customer-cat-btn px-4 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl border border-blue-500/20 shadow-lg shadow-blue-500/10";
+                } else {
+                    btn.className = "customer-cat-btn px-4 py-2 bg-slate-900 text-slate-400 text-xs font-medium rounded-xl border border-slate-800/80 hover:bg-slate-800 transition";
+                }
+            });
+            renderCustomerProducts();
+        }
+
+        function addTokenToCustomerCart(barcode) {
+            const product = db.find(i => i.barcode === barcode);
+            if (!product || product.quantity <= 0) return;
+
+            const existing = customerCart.find(i => i.barcode === barcode);
+            if(existing) {
+                if(existing.orderedQty >= product.quantity) {
+                    showNotification("Omborda bundan ortiq mahsulot yo'q!");
+                    return;
+                }
+                existing.orderedQty++;
+            } else {
+                customerCart.push({ barcode, name: product.name, price: product.price, orderedQty: 1 });
+            }
+            
+            localStorage.setItem('customer_active_cart', JSON.stringify(customerCart));
+            updateCustomerCartBadge();
+            showNotification(`Savatchaga qo'shildi: ${product.name}`, 'success');
+        }
+
+        function updateCustomerCartBadge() {
+            const count = customerCart.reduce((total, item) => total + item.orderedQty, 0);
+            document.getElementById('customer-cart-count').innerText = count;
+        }
+
+        function openCartModal() {
+            document.getElementById('modal-cart').classList.remove('hidden');
+            renderCustomerCartList();
+        }
+        function closeCartModal() {
+            document.getElementById('modal-cart').classList.add('hidden');
+        }
+
+        function updateCustomerCartQty(idx, change) {
+            const item = customerCart[idx];
+            const product = db.find(p => p.barcode === item.barcode);
+            
+            item.orderedQty += change;
+            if (product && item.orderedQty > product.quantity) {
+                showNotification("Omborda qoldiq yetarli emas!");
+                item.orderedQty = product.quantity;
+            }
+            
+            if (item.orderedQty <= 0) customerCart.splice(idx, 1);
+            
+            localStorage.setItem('customer_active_cart', JSON.stringify(customerCart));
+            updateCustomerCartBadge();
+            renderCustomerCartList();
+            renderCustomerProducts();
+        }
+
+        function renderCustomerCartList() {
+            const list = document.getElementById('customer-cart-list');
+            const emptyEl = document.getElementById('customer-cart-empty');
+            list.innerHTML = "";
+
+            if(customerCart.length === 0) {
+                emptyEl.classList.remove('hidden');
+                document.getElementById('customer-cart-total').innerText = "0 so'm";
+                return;
+            }
+            emptyEl.classList.add('hidden');
+
+            let total = 0;
+            customerCart.forEach((item, idx) => {
+                total += item.price * item.orderedQty;
+                const row = document.createElement('div');
+                row.className = "bg-slate-950 p-3 rounded-2xl border border-slate-800 flex justify-between items-center";
+                row.innerHTML = `
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-200">${item.name}</h4>
+                        <p class="text-[10px] text-emerald-400 font-extrabold">${item.price.toLocaleString('uz-UZ')} so'm</p>
+                    </div>
+                    <div class="flex items-center gap-2.5">
+                        <button onclick="updateCustomerCartQty(${idx}, -1)" class="w-7 h-7 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 text-xs font-bold flex items-center justify-center">-</button>
+                        <span class="text-xs font-bold text-white">${item.orderedQty}</span>
+                        <button onclick="updateCustomerCartQty(${idx}, 1)" class="w-7 h-7 bg-slate-900 border border-slate-800 rounded-lg text-slate-400 text-xs font-bold flex items-center justify-center">+</button>
+                    </div>
+                `;
+                list.appendChild(row);
+            });
+            document.getElementById('customer-cart-total').innerText = total.toLocaleString('uz-UZ') + " so'm";
+        }
+
+        function checkoutCustomerOrder() {
+            if(customerCart.length === 0) return;
+
+            // CRITICAL: Update the Central Database array simulating subtraction from inventory!
+            customerCart.forEach(cartItem => {
+                const product = db.find(p => p.barcode === cartItem.barcode);
+                if (product) {
+                    product.quantity = Math.max(0, product.quantity - cartItem.orderedQty);
+                }
+            });
+
+            localStorage.setItem('monolith_central_db', JSON.stringify(db));
+            
+            // WebApp trigger if in bot
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify({ action: "onlayn_savdo_chiqim", barcodes: customerCart }));
+            }
+
+            customerCart = [];
+            localStorage.removeItem('customer_active_cart');
+            closeCartModal();
+            renderCustomerProducts();
+            showNotification("Buyurtmangiz muvaffaqiyatli qabul qilindi! Ombor yangilandi.", 'success');
+        }
+
+
+        // ========================================== 
+        //         ADMIN ACCESS CONTROL (LOGIN)       
+        // ==========================================
+        function openLoginModal() { document.getElementById('modal-login').classList.remove('hidden'); }
+        function closeLoginModal() { document.getElementById('modal-login').classList.add('hidden'); }
+        
+        function attemptLogin() {
+            const user = document.getElementById('login-user').value;
+            const pass = document.getElementById('login-pass').value;
+
+            if(user === 'admin' && pass === '1234') {
+                isAdminAuthenticated = true;
+                closeLoginModal();
+                showNotification("Xush kelibsiz! Avtorizatsiya muvaffaqiyatli.", "success");
+                showView('admin');
+            } else {
+                alert("Xato login yoki parol!");
+            }
+        }
+
+        function logoutAdmin() {
+            isAdminAuthenticated = false;
+            showView('customer');
+            showNotification("Tizimdan chiqildi.");
+        }
+
+
+        // ========================================== 
+        //           ADMIN PANEL INVENTORY & POS      
+        // ==========================================
+        function switchAdminTab(tab) {
+            activeAdminTab = tab;
+            if(tab === 'ombor') {
+                document.getElementById('admin-tab-ombor').classList.remove('hidden');
+                document.getElementById('admin-tab-kassa').classList.add('hidden');
+                document.getElementById('admin-ombor-btn').className = "w-full py-2.5 text-center text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 transition duration-200";
+                document.getElementById('admin-kassa-btn').className = "w-full py-2.5 text-center text-xs font-bold rounded-xl text-slate-400 transition duration-200";
+            } else {
+                document.getElementById('admin-tab-ombor').classList.add('hidden');
+                document.getElementById('admin-tab-kassa').classList.remove('hidden');
+                document.getElementById('admin-ombor-btn').className = "w-full py-2.5 text-center text-xs font-bold rounded-xl text-slate-400 transition duration-200";
+                document.getElementById('admin-kassa-btn').className = "w-full py-2.5 text-center text-xs font-bold rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/10 transition duration-200";
+                renderAdminCart();
+            }
+        }
+
+        // Camera Core Engine for Protected Admin
+        function onAdminScanSuccess(decodedText) {
+            showNotification("Shtrix-kod o'qildi: " + decodedText, 'success');
+            
+            if (activeAdminTab === 'ombor') {
+                document.getElementById('k-barcode').value = decodedText;
+                const item = db.find(i => i.barcode === decodedText);
+                if (item) {
+                    document.getElementById('k-name').value = item.name;
+                    document.getElementById('k-qty').value = item.quantity;
+                    document.getElementById('k-cost').value = item.cost_price;
+                    document.getElementById('k-price').value = item.price;
+                    document.getElementById('k-image').value = item.image || "";
+                    showNotification("Mavjud mahsulot topildi, tahrirlashingiz mumkin!");
+                }
+            } else {
+                const item = db.find(i => i.barcode === decodedText);
+                if (item) {
+                    addTokenToAdminCart(item.barcode, item.name, item.price);
+                } else {
+                    addTokenToAdminCart(decodedText, "Noma'lum (" + decodedText + ")", 0);
+                }
+            }
+        }
+
+        function startAdminScanner() {
+            if (!html5QrcodeScanner) {
+                html5QrcodeScanner = new Html5QrcodeScanner("reader", { 
+                    fps: 24, 
+                    qrbox: { width: 170, height: 110 },
+                    aspectRatio: 1.0,
+                    videoConstraints: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
+                }, false);
+                html5QrcodeScanner.render(onAdminScanSuccess);
+            }
+        }
+
+        function stopAdminScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.clear().then(() => { html5QrcodeScanner = null; }).catch(err => console.error(err));
+            }
+        }
+
+        // Warehouse update action
+        function adminSubmitKirim() {
+            const barcode = document.getElementById('k-barcode').value.trim();
+            const name = document.getElementById('k-name').value.trim();
+            const category = document.getElementById('k-category').value;
+            const quantity = parseInt(document.getElementById('k-qty').value) || 0;
+            const cost_price = parseFloat(document.getElementById('k-cost').value) || 0;
+            const price = parseFloat(document.getElementById('k-price').value) || 0;
+            const image = document.getElementById('k-image').value.trim();
+
+            if (!barcode || !name || price <= 0) {
+                alert("Shtrix-kod, nom va sotish narxini to'liq kiriting!");
+                return;
+            }
+
+            const payload = { barcode, name, category, quantity, cost_price, price, image };
+            const idx = db.findIndex(i => i.barcode === barcode);
+            
+            if (idx > -1) db[idx] = payload;
+            else db.push(payload);
+
+            localStorage.setItem('monolith_central_db', JSON.stringify(db));
+            
+            // Fields clear
+            document.getElementById('k-barcode').value = "";
+            document.getElementById('k-name').value = "";
+            document.getElementById('k-cost').value = "";
+            document.getElementById('k-price').value = "";
+            document.getElementById('k-image').value = "";
+            
+            showNotification("Markaziy Ombor yangilandi! Onlayn do'konga uzatildi.", 'success');
+            renderCustomerProducts();
+        }
+
+        // Admin POS operations
+        function addTokenToAdminCart(barcode, name, price) {
+            const idx = adminCart.findIndex(i => i.barcode === barcode);
+            if(idx > -1) {
+                adminCart[idx].quantity++;
+            } else {
+                adminCart.push({ barcode, name, price: parseFloat(price) || 0, quantity: 1 });
+            }
+            renderAdminCart();
+        }
+
+        function addManualToAdminCart() {
+            const b = document.getElementById('m-barcode').value.trim();
+            const n = document.getElementById('m-name').value.trim();
+            const p = document.getElementById('m-price').value.trim();
+            if(!b || !n) return;
+            addTokenToAdminCart(b, n, p);
+            document.getElementById('m-barcode').value = "";
+            document.getElementById('m-name').value = "";
+            document.getElementById('m-price').value = "";
+        }
+
+        function updateAdminCartQty(idx, change) {
+            adminCart[idx].quantity += change;
+            if(adminCart[idx].quantity <= 0) adminCart.splice(idx,1);
+            renderAdminCart();
+        }
+
+        function updateAdminCartPrice(idx, val) {
+            adminCart[idx].price = parseFloat(val) || 0;
+            calculateAdminTotals();
+        }
+
+        function clearAdminCart() { adminCart = []; renderAdminCart(); }
+
+        function calculateAdminTotals() {
+            let total = 0, count = 0;
+            adminCart.forEach(i => { total += i.price * i.quantity; count += i.quantity; });
+            document.getElementById('admin-total-qty').innerText = count + " ta";
+            document.getElementById('admin-total-price').innerText = total.toLocaleString('uz-UZ') + " so'm";
+        }
+
+        function renderAdminCart() {
+            const container = document.getElementById('admin-cart-list');
+            const emptyEl = document.getElementById('admin-cart-empty');
+            container.innerHTML = "";
+
+            if(adminCart.length === 0) {
+                container.classList.add('hidden');
+                emptyEl.classList.remove('hidden');
+                calculateAdminTotals();
+                return;
+            }
+            emptyEl.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            adminCart.forEach((item, idx) => {
+                const div = document.createElement('div');
+                div.className = "bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5";
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-xs font-bold text-slate-200">${item.name}</p>
+                            <p class="text-[9px] text-slate-500">Kod: ${item.barcode}</p>
+                        </div>
+                        <input type="number" value="${item.price}" onchange="updateAdminCartPrice(${idx}, this.value)" class="w-16 bg-slate-900 border border-slate-800 rounded px-1 text-right text-xs text-green-400 font-bold">
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-[10px] text-slate-500">Donalar:</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="updateAdminCartQty(${idx}, -1)" class="w-6 h-6 bg-slate-900 border border-slate-800 text-slate-400 rounded font-bold flex items-center justify-center">-</button>
+                            <span class="text-white text-xs font-bold">${item.quantity}</span>
+                            <button onclick="updateAdminCartQty(${idx}, 1)" class="w-6 h-6 bg-slate-900 border border-slate-800 text-slate-400 rounded font-bold flex items-center justify-center">+</button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+            calculateAdminTotals();
+        }
+
+        function adminSubmitCheckout() {
+            if (adminCart.length === 0) return;
+
+            // Subtract from Central simulated database qoldiq inventory 
+            adminCart.forEach(cartItem => {
+                const product = db.find(p => p.barcode === cartItem.barcode);
+                if (product) {
+                    product.quantity = Math.max(0, product.quantity - cartItem.quantity);
+                }
+            });
+
+            localStorage.setItem('monolith_central_db', JSON.stringify(db));
+            
+            // Bot communication simulation
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                Telegram.WebApp.sendData(JSON.stringify({ action: "kassa_chiqim_sotuv", barcodes: adminCart }));
+            }
+
+            adminCart = [];
+            renderAdminCart();
+            renderCustomerProducts();
+            showNotification("Kassa sotuvi yakunlandi! Ombor avtomat ravishda kamaydi.", 'success');
+        }
+
+        // Init setup view on startup
+        renderCustomerProducts();
+    </script>
+</body>
+</html>
