@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Qulay Market - Ekotizim</title>
-    <!-- Telegram WebApp Script -->
+    
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+    <!-- Telegram WebApp Script -->
+  
     <!-- HTML5-QRCode library -->
     <script src="https://unpkg.com/html5-qrcode"></script>
     <!-- Tailwind CSS -->
@@ -736,25 +739,32 @@
         }
 
         function adminSubmitCheckout() {
-            if (adminCart.length === 0) return;
+    if (adminCart.length === 0) return;
 
-            // Subtract from Central simulated database qoldiq inventory 
-            adminCart.forEach(cartItem => {
-                const product = db.find(p => p.barcode === cartItem.barcode);
-                if (product) {
-                    product.quantity = Math.max(0, product.quantity - cartItem.quantity);
-                }
-            });
+    // Subtract from Central simulated database qoldiq inventory
+    adminCart.forEach(cartItem => {
+        const product = db.find(p => p.barcode === cartItem.barcode);
+        if (product) {
+            product.quantity = Math.max(0, product.quantity - cartItem.quantity);
+        }
 
-            localStorage.setItem('monolith_central_db', JSON.stringify(db));
-            
-            // Bot communication simulation
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                Telegram.WebApp.sendData(JSON.stringify({ action: "kassa_chiqim_sotuv", barcodes: adminCart }));
-            }
+        // 🚀 MANA SHU YER BOTGA MA'LUMOT YUBORADI
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+            Telegram.WebApp.sendData(JSON.stringify({
+                kod: cartItem.barcode,
+                nomi: product ? product.name : "Noma'lum mahsulot",
+                narxi: cartItem.price || 0,
+                turi: "savdo"
+            }));
+        }
+    });
 
-            adminCart = [];
-            renderAdminCart();
+    localStorage.setItem('monolith_central_db', JSON.stringify(db));
+
+    adminCart = [];
+    renderAdminCart();
+    renderCustomerProducts();
+}
             renderCustomerProducts();
             showNotification("Kassa sotuvi yakunlandi! Ombor avtomat ravishda kamaydi.", 'success');
         }
