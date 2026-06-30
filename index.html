@@ -738,33 +738,44 @@
             calculateAdminTotals();
         }
 
-      function adminSubmitCheckout() {
+  function adminSubmitCheckout() {
     if (adminCart.length === 0) return;
 
-    // Subtract from Central simulated database qoldiq inventory
+    let messageText = "🔔 💼 **ADMIN UCHUN BILDIRISHNOMA**\n\n🛍️ **Yangi sotuv amalga oshirildi!**\n\n";
+
     adminCart.forEach(cartItem => {
         const product = db.find(p => p.barcode === cartItem.barcode);
         if (product) {
             product.quantity = Math.max(0, product.quantity - cartItem.quantity);
         }
-
-        // 🚀 Telegram WebApp orqali botga ma'lumot uzatish
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-            Telegram.WebApp.sendData(JSON.stringify({
-                kod: cartItem.barcode,
-                nomi: product ? product.name : "Noma'lum mahsulot",
-                narxi: cartItem.price || 0,
-                turi: "savdo"
-            }));
-        }
+        
+        let nomi = product ? product.name : "Noma'lum mahsulot";
+        messageText += `📦 **Mahsulot:** ${nomi}\n🔢 **Shtrixkod:** ${cartItem.barcode}\n💰 **Narxi:** ${cartItem.price || 0} so'm\n\n`;
     });
 
     localStorage.setItem('monolith_central_db', JSON.stringify(db));
 
+    // 🚀 TO'G'RIDAN-TO'G'RI TELEGRAM API ORQALI ADMINGA XABAR YUBORISH
+    const botToken = "8840819267:AAFeXN1j3Crp86HUOT1zzoTgjtWSW5Kl3wA";
+    const adminId = "6744459523"; // <--- Bu yerga o'zingizning shaxsiy Telegram ID raqamingizni yozing!
+
+    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            chat_id: adminId,
+            text: messageText,
+            parse_mode: "Markdown"
+        })
+    }).then(response => {
+        if(response.ok) {
+            showNotification("Kassa sotuvi yakunlandi! Admin botga xabar yuborildi.", "success");
+        }
+    });
+
     adminCart = [];
     renderAdminCart();
     renderCustomerProducts();
-    showNotification("Kassa sotuvi yakunlandi! Ombor avtomat ravishda kamaydi.", "success");
 }
 
 // // Init setup view on startup
