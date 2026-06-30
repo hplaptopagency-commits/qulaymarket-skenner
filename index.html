@@ -738,7 +738,7 @@
             calculateAdminTotals();
         }
 
-        function adminSubmitCheckout() {
+      function adminSubmitCheckout() {
     if (adminCart.length === 0) return;
 
     // Subtract from Central simulated database qoldiq inventory
@@ -748,7 +748,7 @@
             product.quantity = Math.max(0, product.quantity - cartItem.quantity);
         }
 
-        // 🚀 MANA SHU YER BOTGA MA'LUMOT YUBORADI
+        // 🚀 Telegram WebApp orqali botga ma'lumot uzatish
         if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
             Telegram.WebApp.sendData(JSON.stringify({
                 kod: cartItem.barcode,
@@ -764,13 +764,11 @@
     adminCart = [];
     renderAdminCart();
     renderCustomerProducts();
+    showNotification("Kassa sotuvi yakunlandi! Ombor avtomat ravishda kamaydi.", "success");
 }
-            renderCustomerProducts();
-            showNotification("Kassa sotuvi yakunlandi! Ombor avtomat ravishda kamaydi.", 'success');
-        }
 
-        // Init setup view on startup
-        renderCustomerProducts();
-    </script>
+// // Init setup view on startup
+renderCustomerProducts();
+</script>
 </body>
 </html>
