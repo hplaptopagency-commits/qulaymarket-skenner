@@ -738,7 +738,7 @@
             calculateAdminTotals();
         }
 
-  function adminSubmitCheckout() {
+ function adminSubmitCheckout() {
     if (adminCart.length === 0) return;
 
     let messageText = "🔔 💼 **ADMIN UCHUN BILDIRISHNOMA**\n\n🛍️ **Yangi sotuv amalga oshirildi!**\n\n";
@@ -750,16 +750,19 @@
         }
         
         let nomi = product ? product.name : "Noma'lum mahsulot";
-        messageText += `📦 **Mahsulot:** ${nomi}\n🔢 **Shtrixkod:** ${cartItem.barcode}\n💰 **Narxi:** ${cartItem.price || 0} so'm\n\n`;
+        messageText += `📦 **Mahsulot:** ${nomi}\n🔢 **Shtrixkod:** \`${cartItem.barcode}\`\n💰 **Narxi:** ${cartItem.price || 0} so'm\n\n`;
     });
 
     localStorage.setItem('monolith_central_db', JSON.stringify(db));
 
-    // 🚀 TO'G'RIDAN-TO'G'RI TELEGRAM API ORQALI ADMINGA XABAR YUBORISH
-    const botToken = "8840819267:AAFeXN1j3Crp86HUOT1zzoTgjtWSW5Kl3wA";
-    const adminId = "6744459523"; // <--- Bu yerga o'zingizning shaxsiy Telegram ID raqamingizni yozing!
+    // 🚀 TELEGRAM BOT ORQALI TO'G'RIDAN-TO'G'RI ADMINGA XABAR YUBORISH
+    // ⚠️ TOKEn VA ID'ni FAQAT SHU YERDA TO'G'RI KIRITING:
+    const botToken = "YANGI_OCHGAN_BOTINGIZNI_TOKENINI_SHU_YERGA_YOZING";
+    const adminId = "OZINGIZNING_TELEGRAM_IDINGIZNI_SHU_YERGA_YOZING";
 
-    fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+    fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -767,10 +770,16 @@
             text: messageText,
             parse_mode: "Markdown"
         })
-    }).then(response => {
-        if(response.ok) {
+    })
+    .then(response => {
+        if (response.ok) {
             showNotification("Kassa sotuvi yakunlandi! Admin botga xabar yuborildi.", "success");
+        } else {
+            showNotification("Xabar yuborishda xatolik yuz berdi.", "error");
         }
+    })
+    .catch(error => {
+        console.error("Error:", error);
     });
 
     adminCart = [];
